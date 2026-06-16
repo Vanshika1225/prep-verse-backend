@@ -15,7 +15,7 @@ app.use(cors({
     credentials: true
 }))
 
-app.use('/api/auth',validate(SignupSchema), authRoutes)
+app.use('/api/auth', authRoutes)
 
 app.use(errorHandler)
 
