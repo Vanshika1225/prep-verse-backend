@@ -19,5 +19,6 @@ export const loginSchema = z.object({
         .regex(
             /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/,
             "Password must contain uppercase, lowercase, number and special character"
-        )
+        ),
+    rememberMe: z.boolean().optional().default(false)
 })

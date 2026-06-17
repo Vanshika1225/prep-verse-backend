@@ -1,6 +1,6 @@
 import { AUTH_MESSAGES } from "../../constants/messages.js"
 import { comparePassword, hashedPassword } from "../../utils/bcrypt.js"
-import { generateAccessToken } from "../../utils/jwt.js"
+import { generateAccessToken, generateRefreshToken } from "../../utils/jwt.js"
 import User from "./auth.model.js"
 
 export const signupService = async (name, email, password) => {
@@ -15,7 +15,7 @@ export const signupService = async (name, email, password) => {
     return user;
 }
 
-export const loginService = async (email, password) => {
+export const loginService = async (email, password, rememberMe) => {
     const user = await User.findOne({ email });
     if (!user) {
         throw new Error(AUTH_MESSAGES.EMAIL_NOT_REGISTERED)
@@ -25,5 +25,6 @@ export const loginService = async (email, password) => {
         throw new Error(AUTH_MESSAGES.WRONG_PASSWORD_ENTERED)
     }
     const accessToken = generateAccessToken(user);
-    return { user, accessToken }
+    const refreshToken = generateRefreshToken(user, rememberMe)
+    return { user, accessToken, refreshToken }
 }

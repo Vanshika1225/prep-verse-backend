@@ -13,7 +13,7 @@ export const generateAccessToken = (user) => {
     )
 }
 
-export const generateRefreshToken = (user) => {
+export const generateRefreshToken = (user, rememberMe = false) => {
     return jwt.sign(
         {
             userId: user._id,
@@ -21,7 +21,7 @@ export const generateRefreshToken = (user) => {
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
-            expiresIn: '24h'
+            expiresIn: rememberMe ? "30d" : '24h'
         }
     )
 }

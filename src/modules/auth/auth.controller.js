@@ -23,7 +23,7 @@ export const signup = async (req, res, next) => {
 export const login = async (req, res) => {
     try {
         const data = loginSchema.parse(req.body);
-        const result = await loginService(data.email, data.password);
+        const result = await loginService(data.email, data.password, data.rememberMe);
         return res.status(httpStatusCodes.OK).json({
             success: true,
             message: AUTH_MESSAGES.LOGIN_SUCCESS,
