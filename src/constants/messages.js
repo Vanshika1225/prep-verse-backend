@@ -3,5 +3,6 @@ export const AUTH_MESSAGES = {
   USER_CREATED: "User registered successfully.",
   EMAIL_NOT_REGISTERED: "Email not registered.",
   WRONG_PASSWORD_ENTERED: "Password entered is wrong.",
-  LOGIN_SUCCESS:"Login Successfully."
+  LOGIN_SUCCESS:"Login Successfully.",
+  INVALID_TOKEN:"Invalid or Expired token."
 };
