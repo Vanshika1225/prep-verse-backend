@@ -19,6 +19,7 @@ export const signupService = async (name, email, password) => {
 
 export const loginService = async (email, password, rememberMe) => {
     const user = await User.findOne({ email });
+
     if (!user) {
         throw new Error(AUTH_MESSAGES.EMAIL_NOT_REGISTERED)
     }
@@ -28,6 +29,7 @@ export const loginService = async (email, password, rememberMe) => {
     }
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user, rememberMe)
+    console.log(user, "user")
     return { user, accessToken, refreshToken }
 }
 
@@ -80,4 +82,15 @@ export const resetPasswordService = async (token, password) => {
     user.resetPasswordToken = undefined
 
     await user.save()
+}
+
+export const logoutService = async (userId) => {
+    const user = await User.findById(userId)
+    if (!user) {
+        throw new Error(AUTH_MESSAGES.USER_NOT_FOUND)
+    }
+
+    user.refreshToken = null;
+    user.accessToken = null;
+    await user.save();
 }
