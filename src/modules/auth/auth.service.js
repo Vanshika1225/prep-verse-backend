@@ -29,7 +29,6 @@ export const loginService = async (email, password, rememberMe) => {
     }
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user, rememberMe)
-    console.log(user, "user")
     return { user, accessToken, refreshToken }
 }
 
