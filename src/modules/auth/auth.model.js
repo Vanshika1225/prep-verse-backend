@@ -1,37 +1,47 @@
 import mongoose from "mongoose";
 import { ROLES } from "../../constants/roles.js";
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
     name: {
-        type: "string",
-        required: true,
-        trim: true
+      type: "string",
+      required: true,
+      trim: true,
     },
     email: {
-        type: "string",
-        required: true,
-        unique: true,
-        lowercase: true
+      type: "string",
+      required: true,
+      unique: true,
+      lowercase: true,
     },
     password: {
-        type: "string",
-        required: true,
+      type: String,
+      required: function () {
+        return this.provider === "local";
+      },
+    },
+    provider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
     },
     role: {
-        type: "string",
-        enum: [ROLES.USER, ROLES.ADMIN],
-        default: ROLES.USER
+      type: "string",
+      enum: [ROLES.USER, ROLES.ADMIN],
+      default: ROLES.USER,
     },
     resetPasswordToken: {
-        type: "string"
+      type: "string",
     },
     resetPasswordExpires: {
-        type: Date
-    }
-}, {
-    timestamps: true
-})
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
-const User = mongoose.model("User", userSchema)
+const User = mongoose.model("User", userSchema);
 
-export default User
+export default User;
