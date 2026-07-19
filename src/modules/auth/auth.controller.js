@@ -3,12 +3,14 @@ import { AUTH_MESSAGES } from "../../constants/messages.js";
 import { httpStatusCodes } from "../../constants/statusCode.js";
 import {
     forgetPasswordService,
+    googleLoginService,
     loginService,
     logoutService,
     resetPasswordService,
     signupService
 } from "./auth.service.js";
 import { loginSchema } from "./auth.validation.js";
+import { OAuth2Client } from "google-auth-library";
 
 export const signup = async (req, res, next) => {
     try {
@@ -111,3 +113,38 @@ export const logout = async (req, res, next) => {
         next(err);
     }
 }
+
+const client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID
+);
+
+export const googleLogin = async (req, res) => {
+    try {
+        const { token } = req.body;
+
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+
+        const result = await googleLoginService(payload);
+
+        logger.info(`Google login successful: ${payload.email}`);
+
+        return res.status(httpStatusCodes.OK).json({
+            success: true,
+            message: AUTH_MESSAGES.LOGIN_SUCCESS,
+            data: result,
+        });
+
+    } catch (err) {
+        logger.error(`Google login failed: ${err.message}`);
+
+        return res.status(httpStatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: err.message,
+        });
+    }
+};
