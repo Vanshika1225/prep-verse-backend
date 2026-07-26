@@ -34,3 +34,7 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+problems.json
+convertProblem.js 
+allProblems.seed.js
