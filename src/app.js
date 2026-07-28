@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./modules/auth/auth.route.js";
 import problemRoutes from "./modules/dsa/allProblems/allProblems.route.js";
+import patternRoutes from "./modules/dsa/patternwise/patternwise.route.js";
 import errorHandler from "./middleware/error.middleware.js";
 import validate from "./middleware/validation.middleware.js";
 import { SignupSchema } from "./modules/auth/auth.validation.js";
@@ -32,5 +33,6 @@ app.use(errorHandler);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/problems", problemRoutes);
+app.use("/api/problems/patternwise", patternRoutes);
 
 export default app;

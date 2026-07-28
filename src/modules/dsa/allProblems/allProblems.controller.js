@@ -24,7 +24,7 @@ export const updateUserProblem = async (req, res, next) => {
   try {
     const data = await problemService.updateUserProblem(req);
 
-    res.status(200).json({
+    res.status(httpStatusCodes.OK).json({
       message: "Progress Updated Successfully",
       data,
     });
@@ -38,14 +38,14 @@ export const getOverview = async (req, res) => {
   try {
     const overview = await problemService.getOverviewCounts(req.user.userId);
 
-    return res.status(200).json({
+    return res.status(httpStatusCodes.OK).json({
       success: true,
       data: overview,
     });
   } catch (error) {
     logger.error("Overview Error:", error);
 
-    return res.status(500).json({
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Internal Server Error",
     });
@@ -58,14 +58,14 @@ export const getRecentProblemsController = async (req, res) => {
       req.user.userId,
     );
 
-    return res.status(200).json({
+    return res.status(httpStatusCodes.OK).json({
       success: true,
       data: recentProblems,
     });
   } catch (error) {
     logger.error("Recent Problems Error:", error);
 
-    return res.status(500).json({
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Internal Server Error",
     });
@@ -78,14 +78,14 @@ export const getTopicBreakdownController = async (req, res) => {
       req.user.userId,
     );
 
-    return res.status(200).json({
+    return res.status(httpStatusCodes.OK).json({
       success: true,
       data: topicBreakdown,
     });
   } catch (error) {
     logger.error("Topic Breakdown Error:", error);
 
-    return res.status(500).json({
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Internal Server Error",
     });
