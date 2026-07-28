@@ -38,3 +38,5 @@ pids
 problems.json
 convertProblem.js 
 allProblems.seed.js
+pattern.seed.js
+patternJson.json
