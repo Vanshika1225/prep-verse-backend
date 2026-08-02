@@ -5,11 +5,22 @@ import {
   normaliseCodeforcesContest,
 } from "./providers/codeforces.provider.js";
 
+import {
+  fetchCodeChefContest,
+  normaliseCodeChefContest,
+} from "./providers/codechef.provider.js";
+
+import {
+  fetchLeetCodeContests,
+  normaliseLeetCodeContest,
+} from "./providers/leetcode.provider.js";
+
 import Contests from "./contests.model.js";
 import connectDb from "../../../config/db.js";
+import logger from "../../../utils/logger.js";
 
 export const syncCodeForcesContests = async () => {
-  console.log("Fetching Codeforces Contests.....");
+  logger.info("Fetching Codeforces Contests.....");
 
   const contests = await fetchCodeforcesContest();
 
@@ -39,22 +50,120 @@ export const syncCodeForcesContests = async () => {
     .limit(5)
     .lean();
 
-  console.log(`Synced ${operations.length} Codeforces contests`);
+  logger.info(`Synced ${operations.length} Codeforces contests`);
 
   return operations.length;
+};
+
+export const syncCodeChefContests = async () => {
+  try {
+    logger.info("Fetching CodeChef contests...");
+
+    const contests = await fetchCodeChefContest();
+
+    const operations = contests?.present_contests?.map((contest) => {
+      const normalised = normaliseCodeChefContest(contest);
+
+      return {
+        updateOne: {
+          filter: {
+            platform: normalised.platform,
+            externalId: normalised.externalId,
+          },
+
+          update: {
+            $set: normalised,
+          },
+
+          upsert: true,
+        },
+      };
+    });
+
+    if (operations.length > 0) {
+      const result = await Contests.bulkWrite(operations);
+
+      logger.info(
+        `CodeChef synced: ${result.upsertedCount} inserted, ${result.modifiedCount} updated`,
+      );
+    }
+
+    return {
+      success: true,
+      count: operations.length,
+    };
+  } catch (error) {
+    logger.error("CodeChef sync failed:", error.message);
+
+    return {
+      success: false,
+      count: 0,
+      error: error.message,
+    };
+  }
+};
+
+export const syncLeetCodeContests = async () => {
+  try {
+    logger.info("Fetching LeetCode contests...");
+
+    const contests = await fetchLeetCodeContests();
+
+    const operations = contests.map((contest) => {
+      const normalised = normaliseLeetCodeContest(contest);
+
+      return {
+        updateOne: {
+          filter: {
+            platform: normalised.platform,
+            externalId: normalised.externalId,
+          },
+
+          update: {
+            $set: normalised,
+          },
+
+          upsert: true,
+        },
+      };
+    });
+
+    if (operations.length > 0) {
+      const result = await Contests.bulkWrite(operations);
+
+      logger.info(
+        `LeetCode synced: ${result.upsertedCount} inserted, ${result.modifiedCount} updated`,
+      );
+    }
+
+    return {
+      success: true,
+      count: operations.length,
+    };
+  } catch (error) {
+    logger.error("LeetCode sync failed:", error.message);
+
+    return {
+      success: false,
+      count: 0,
+      error: error.message,
+    };
+  }
 };
 
 export const syncAllContests = async () => {
   await connectDb();
 
   await syncCodeForcesContests();
+  await syncCodeChefContests();
+  await syncLeetCodeContests();
 };
 
 syncAllContests()
   .then(() => {
-    console.log("Sync completed");
+    logger.info("Sync completed");
   })
   .catch((error) => {
-    console.error("Sync failed:", error);
+    logger.error("Sync failed:", error);
     process.exit(1);
   });

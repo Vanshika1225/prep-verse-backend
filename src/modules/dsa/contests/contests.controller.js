@@ -1,3 +1,4 @@
+import logger from "../../../utils/logger.js";
 import { getLiveContests, getUpcommingContests } from "./contests.service.js";
 
 export const getUpcomingContestsController = async (req, res) => {
@@ -15,7 +16,7 @@ export const getUpcomingContestsController = async (req, res) => {
       contests,
     });
   } catch (error) {
-    console.error("Get upcoming contests error:", error);
+    logger.error("Get upcoming contests error:", error);
 
     res.status(500).json({
       success: false,
@@ -39,7 +40,7 @@ export const getLiveContestsController = async (req, res) => {
       contests,
     });
   } catch (error) {
-    console.error("Get live contests error:", error);
+    logger.error("Get live contests error:", error);
 
     res.status(500).json({
       success: false,
