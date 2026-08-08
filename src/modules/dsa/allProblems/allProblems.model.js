@@ -47,6 +47,10 @@ const userProblemSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    firstSolvedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -64,5 +68,7 @@ userProblemSchema.index(
 );
 
 const UserProblem = mongoose.model("UserProblem", userProblemSchema);
+
 const AllProblems = mongoose.model("Problem", problemSchema);
+
 export { AllProblems, UserProblem };

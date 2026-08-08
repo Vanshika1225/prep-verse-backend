@@ -6,6 +6,7 @@ import problemRoutes from "./modules/dsa/allProblems/allProblems.route.js";
 import patternRoutes from "./modules/dsa/patternwise/patternwise.route.js";
 import randomProblemRoutes from "./modules/dsa/randomProblems/randomProblems.route.js";
 import contestsRoutes from "./modules/dsa/contests/contests.route.js";
+import userRoutes from "./modules/users/users.route.js";
 import errorHandler from "./middleware/error.middleware.js";
 import validate from "./middleware/validation.middleware.js";
 import { SignupSchema } from "./modules/auth/auth.validation.js";
@@ -41,5 +42,8 @@ app.use("/api/problems", problemRoutes);
 app.use("/api/problems/patternwise", patternRoutes);
 app.use("/api/problems/randomProblem", randomProblemRoutes);
 app.use("/api/contests", contestsRoutes);
+
+// users
+app.use("/api/users", userRoutes);
 
 export default app;
