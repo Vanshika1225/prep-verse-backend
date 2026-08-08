@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { AllProblems, UserProblem } from "./allProblems.model.js";
 
 import { getDayKey } from "../../../utils/date.js";
-import UserActivity from "../../users/users.model.js";
+import { UserActivity } from "../../users/users.model.js";
 
 export const getAllProblems = async (req) => {
   const {
