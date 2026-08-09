@@ -18,6 +18,7 @@
   "author": "Vanshika Kakkar",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.19.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -29,6 +30,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.0",
     "morgan": "^1.11.0",
+    "node-cron": "^4.6.0",
     "nodemailer": "^9.0.1",
     "winston": "^3.19.0",
     "zod": "^4.4.3"

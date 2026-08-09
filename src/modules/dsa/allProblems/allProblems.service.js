@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
+
 import { AllProblems, UserProblem } from "./allProblems.model.js";
+
+import { getDayKey } from "../../../utils/date.js";
+import { UserActivity } from "../../users/users.model.js";
 
 export const getAllProblems = async (req) => {
   const {
@@ -81,21 +85,72 @@ export const getAllProblems = async (req) => {
 export const updateUserProblem = async (req) => {
   const { status, bookmarked } = req.body;
 
+  const userId = req.user.userId;
+  const problemId = req.params.problemId;
+
+  const existing = await UserProblem.findOne({
+    userId,
+    problemId,
+  });
+
+  const wasAlreadySolved = existing?.firstSolvedAt != null;
+
+  const updateData = {};
+
+  if (status !== undefined) {
+    updateData.status = status;
+  }
+
+  if (bookmarked !== undefined) {
+    updateData.bookmarked = bookmarked;
+  }
+
+  if (status === "Solved" && !wasAlreadySolved) {
+    updateData.firstSolvedAt = new Date();
+  }
+
   const updated = await UserProblem.findOneAndUpdate(
     {
-      userId: req.user.userId,
-      problemId: req.params.problemId,
+      userId,
+      problemId,
     },
     {
-      status,
-      bookmarked,
+      $set: updateData,
     },
     {
       new: true,
       upsert: true,
       runValidators: true,
+      setDefaultsOnInsert: true,
     },
   );
+
+  if (status === "Solved" && !wasAlreadySolved) {
+    const now = new Date();
+
+    const dayKey = getDayKey(now, "Asia/Kolkata");
+
+    await UserActivity.findOneAndUpdate(
+      {
+        userId,
+        dayKey,
+      },
+      {
+        $setOnInsert: {
+          activityAt: now,
+        },
+
+        $addToSet: {
+          solvedProblemIds: new mongoose.Types.ObjectId(problemId),
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      },
+    );
+  }
 
   return updated;
 };

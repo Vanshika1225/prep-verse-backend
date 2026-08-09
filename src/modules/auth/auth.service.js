@@ -3,6 +3,7 @@ import { comparePassword, hashedPassword } from "../../utils/bcrypt.js";
 import { sendEmail } from "../../utils/email.js";
 import { generateAccessToken, generateRefreshToken } from "../../utils/jwt.js";
 import { generateResetToken, hashToken } from "../../utils/token.js";
+import { UserProfile } from "../users/users.model.js";
 import User from "./auth.model.js";
 
 export const signupService = async (name, email, password) => {
@@ -13,7 +14,10 @@ export const signupService = async (name, email, password) => {
 
   const hashPassword = await hashedPassword(password);
   const user = await User.create({ name, email, password: hashPassword });
-
+  await UserProfile.create({
+    userId: user._id,
+    name: user.name,
+  });
   return user;
 };
 
@@ -276,6 +280,11 @@ export const googleLoginService = async (payload) => {
       googleId: sub,
       avatar: picture,
       provider: "google",
+    });
+
+    await UserProfile.create({
+      userId: user._id,
+      name: user.name,
     });
   }
 
