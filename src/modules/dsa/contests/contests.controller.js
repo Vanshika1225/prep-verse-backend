@@ -1,3 +1,4 @@
+import { httpStatusCodes } from "../../../constants/statusCode.js";
 import logger from "../../../utils/logger.js";
 
 import {
@@ -19,7 +20,7 @@ export const getUpcomingContestsController = async (req, res) => {
       search,
     });
 
-    return res.status(200).json({
+    return res.status(httpStatusCodes.OK).json({
       success: true,
       count: contests.length,
       contests,
@@ -27,7 +28,7 @@ export const getUpcomingContestsController = async (req, res) => {
   } catch (error) {
     logger.error("Get upcoming contests error:", error);
 
-    return res.status(500).json({
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to fetch upcoming contests",
     });
@@ -44,7 +45,7 @@ export const getLiveContestsController = async (req, res) => {
       search,
     });
 
-    return res.status(200).json({
+    return res.status(httpStatusCodes.OK).json({
       success: true,
       count: contests.length,
       contests,
@@ -52,7 +53,7 @@ export const getLiveContestsController = async (req, res) => {
   } catch (error) {
     logger.error("Get live contests error:", error);
 
-    return res.status(500).json({
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to fetch live contests",
     });
@@ -70,7 +71,7 @@ export const getCompletedContestsController = async (req, res) => {
       search,
     });
 
-    return res.status(200).json({
+    return res.status(httpStatusCodes.OK).json({
       success: true,
 
       message: "Completed contests fetched successfully",
@@ -80,7 +81,7 @@ export const getCompletedContestsController = async (req, res) => {
   } catch (error) {
     logger.error("Get completed contests error:", error);
 
-    return res.status(500).json({
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to fetch completed contests",
     });
@@ -99,14 +100,14 @@ export const getContestAnalyticsController = async (req, res) => {
       platform,
     });
 
-    return res.status(200).json({
+    return res.status(httpStatusCodes.OK).json({
       success: true,
       data: analytics,
     });
   } catch (error) {
     logger.error("Contest analytics error:", error);
 
-    return res.status(500).json({
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: error.message || "Failed to fetch contest analytics",
     });
@@ -119,7 +120,7 @@ export const syncUserContestsController = async (req, res) => {
 
     const result = await syncAllUserContests(userId);
 
-    return res.status(200).json({
+    return res.status(httpStatusCodes.OK).json({
       success: true,
 
       message: "User contest history synced",
@@ -129,7 +130,7 @@ export const syncUserContestsController = async (req, res) => {
   } catch (error) {
     logger.error("User contest sync error:", error);
 
-    return res.status(500).json({
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: error.message || "Failed to sync user contests",
     });
@@ -140,7 +141,7 @@ export const syncContestsController = async (req, res) => {
   try {
     const result = await syncAllContests();
 
-    return res.status(200).json({
+    return res.status(httpStatusCodes.OK).json({
       success: true,
 
       message: "All platform contests synced",
@@ -150,7 +151,7 @@ export const syncContestsController = async (req, res) => {
   } catch (error) {
     logger.error("Contest sync error:", error);
 
-    return res.status(500).json({
+    return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: error.message || "Failed to sync contests",
     });
