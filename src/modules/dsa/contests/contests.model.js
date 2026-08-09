@@ -6,6 +6,7 @@ const contestSchema = new mongoose.Schema(
       type: String,
       enum: ["LeetCode", "Codeforces", "CodeChef"],
       required: true,
+      index: true,
     },
     externalId: {
       type: String,
@@ -14,12 +15,18 @@ const contestSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
+      trim: true,
     },
     startTime: {
       type: Date,
       required: true,
     },
-    endTime: { type: Date, required: true },
+
+    endTime: {
+      type: Date,
+      required: true,
+    },
+
     duration: {
       type: Number,
       required: true,
@@ -30,28 +37,139 @@ const contestSchema = new mongoose.Schema(
     },
     registrationUrl: {
       type: String,
+      default: null,
     },
-    phase: { type: String },
-    type: { type: String },
-    lastSyncedAt: { type: Date },
+
+    phase: {
+      type: String,
+      default: null,
+    },
+
+    type: {
+      type: String,
+      default: null,
+    },
+
+    lastSyncedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
-    timestamp: true,
+    timestamps: true,
   },
 );
 
-contestSchema.index =
-  ({
+const userContestSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+
+    contestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Contest",
+      required: true,
+      index: true,
+    },
+
+    platform: {
+      type: String,
+      enum: ["LeetCode", "Codeforces", "CodeChef"],
+      required: true,
+    },
+
+    externalId: {
+      type: String,
+      required: true,
+    },
+
+    participated: {
+      type: Boolean,
+      default: true,
+    },
+
+    rank: {
+      type: Number,
+      default: null,
+    },
+
+    ratingBefore: {
+      type: Number,
+      default: null,
+    },
+
+    ratingAfter: {
+      type: Number,
+      default: null,
+    },
+
+    ratingChange: {
+      type: Number,
+      default: null,
+    },
+
+    attendedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+contestSchema.index(
+  {
     platform: 1,
     externalId: 1,
   },
   {
     unique: true,
-  });
+  },
+);
 
-contestSchema.index = {
+contestSchema.index({
   startTime: 1,
-};
+});
 
-const ContestList = mongoose.model("Contest", contestSchema);
-export default ContestList;
+contestSchema.index({
+  endTime: 1,
+});
+
+userContestSchema.index(
+  {
+    userId: 1,
+    platform: 1,
+    externalId: 1,
+  },
+  {
+    unique: true,
+  },
+);
+
+userContestSchema.index(
+  {
+    userId: 1,
+    contestId: 1,
+  },
+  {
+    unique: true,
+  },
+);
+
+userContestSchema.index({
+  userId: 1,
+  attendedAt: -1,
+});
+
+const Contest = mongoose.model("Contest", contestSchema);
+
+const UserContest = mongoose.model("UserContest", userContestSchema);
+
+export { Contest, UserContest };
+
+export default Contest;

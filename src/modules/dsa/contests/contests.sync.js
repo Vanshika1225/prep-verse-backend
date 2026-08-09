@@ -1,169 +1,491 @@
-import "dotenv/config";
+import { fetchCodeforcesContests } from "./providers/codeforces.provider.js";
 
-import {
-  fetchCodeforcesContest,
-  normaliseCodeforcesContest,
-} from "./providers/codeforces.provider.js";
+import { fetchCodeChefContests } from "./providers/codechef.provider.js";
 
-import {
-  fetchCodeChefContest,
-  normaliseCodeChefContest,
-} from "./providers/codechef.provider.js";
+import { fetchLeetCodeContests } from "./providers/leetcode.provider.js";
 
-import {
-  fetchLeetCodeContests,
-  normaliseLeetCodeContest,
-} from "./providers/leetcode.provider.js";
+import Contest from "./contests.model.js";
 
-import Contests from "./contests.model.js";
-import connectDb from "../../../config/db.js";
-import logger from "../../../utils/logger.js";
-
-export const syncCodeForcesContests = async () => {
-  logger.info("Fetching Codeforces Contests.....");
-
-  const contests = await fetchCodeforcesContest();
-
-  const operations = contests.map((contest) => {
-    const normalized = normaliseCodeforcesContest(contest);
-
-    return {
-      updateOne: {
-        filter: {
-          platform: normalized.platform,
-          externalId: normalized.externalId,
-        },
-        update: {
-          $set: normalized,
-        },
-        upsert: true,
-      },
-    };
+export const syncLeetCodeUserContests = async (userId) => {
+  const profile = await UserProfile.findOne({
+    userId,
   });
 
-  if (operations.length > 0) {
-    await Contests.bulkWrite(operations);
+  if (!profile) {
+    throw new Error("User profile not found");
   }
 
-  const savedContests = await Contests.find()
-    .sort({ startTime: 1 })
-    .limit(5)
-    .lean();
+  const handle = profile.leetcodeHandle;
 
-  logger.info(`Synced ${operations.length} Codeforces contests`);
+  if (!handle) {
+    throw new Error("LeetCode handle not connected");
+  }
 
-  return operations.length;
-};
+  const result = await fetchLeetCodeUserContests(handle);
 
-export const syncCodeChefContests = async () => {
-  try {
-    logger.info("Fetching CodeChef contests...");
+  const history = result.history;
 
-    const contests = await fetchCodeChefContest();
+  let synced = 0;
 
-    const operations = contests?.present_contests?.map((contest) => {
-      const normalised = normaliseCodeChefContest(contest);
+  for (let i = 0; i < history.length; i++) {
+    const contest = history[i];
 
-      return {
-        updateOne: {
-          filter: {
-            platform: normalised.platform,
-            externalId: normalised.externalId,
-          },
-
-          update: {
-            $set: normalised,
-          },
-
-          upsert: true,
-        },
-      };
-    });
-
-    if (operations.length > 0) {
-      const result = await Contests.bulkWrite(operations);
-
-      logger.info(
-        `CodeChef synced: ${result.upsertedCount} inserted, ${result.modifiedCount} updated`,
-      );
+    if (!contest.attended) {
+      continue;
     }
 
-    return {
-      success: true,
-      count: operations.length,
-    };
-  } catch (error) {
-    logger.error("CodeChef sync failed:", error.message);
+    const contestTitle = contest.contest?.title;
 
-    return {
-      success: false,
-      count: 0,
-      error: error.message,
-    };
+    const startTime = contest.contest?.startTime;
+
+    if (!contestTitle || !startTime) {
+      continue;
+    }
+
+    const externalId = `${contestTitle}-${startTime}`;
+
+    const dbContest = await Contest.findOne({
+      platform: "LeetCode",
+      externalId,
+    });
+
+    if (!dbContest) {
+      console.log(`LeetCode contest not found: ${contestTitle}`);
+
+      continue;
+    }
+
+    let ratingBefore = null;
+
+    if (i > 0) {
+      const previous = history[i - 1];
+
+      if (previous.attended && previous.rating != null) {
+        ratingBefore = previous.rating;
+      }
+    }
+
+    const ratingAfter = contest.rating ?? null;
+
+    let ratingChange = null;
+
+    if (ratingBefore != null && ratingAfter != null) {
+      ratingChange = ratingAfter - ratingBefore;
+    }
+
+    await saveUserContest({
+      userId,
+
+      contestId: dbContest._id,
+
+      platform: "LeetCode",
+
+      externalId,
+
+      participated: true,
+
+      rank: contest.ranking ?? null,
+
+      ratingBefore,
+
+      ratingAfter,
+
+      ratingChange,
+
+      attendedAt: new Date(startTime * 1000),
+    });
+
+    synced++;
   }
+
+  return {
+    platform: "LeetCode",
+    handle,
+    total: history.length,
+    synced,
+  };
+};
+
+export const syncCodeChefUserContests = async (userId) => {
+  const profile = await UserProfile.findOne({
+    userId,
+  });
+
+  if (!profile) {
+    throw new Error("User profile not found");
+  }
+
+  const handle = profile.codechefHandle;
+
+  if (!handle) {
+    throw new Error("CodeChef handle not connected");
+  }
+
+  const contests = await fetchCodeChefUserContests(handle);
+
+  let synced = 0;
+
+  for (const contest of contests) {
+    const dbContest = await Contest.findOne({
+      platform: "CodeChef",
+
+      externalId: String(contest.externalId),
+    });
+
+    if (!dbContest) {
+      continue;
+    }
+
+    await saveUserContest({
+      userId,
+
+      contestId: dbContest._id,
+
+      platform: "CodeChef",
+
+      externalId: String(contest.externalId),
+
+      participated: true,
+
+      rank: contest.rank ?? null,
+
+      ratingBefore: contest.ratingBefore ?? null,
+
+      ratingAfter: contest.ratingAfter ?? null,
+
+      ratingChange: contest.ratingChange ?? null,
+
+      attendedAt: contest.attendedAt ? new Date(contest.attendedAt) : null,
+    });
+
+    synced++;
+  }
+
+  return {
+    platform: "CodeChef",
+    handle,
+    total: contests.length,
+    synced,
+  };
+};
+
+export const syncCodeforcesContests = async () => {
+  const contests = await fetchCodeforcesContests();
+
+  let synced = 0;
+
+  for (const contest of contests) {
+    if (!contest.startTimeSeconds || !contest.durationSeconds) {
+      continue;
+    }
+
+    const startTime = new Date(contest.startTimeSeconds * 1000);
+
+    const endTime = new Date(
+      (contest.startTimeSeconds + contest.durationSeconds) * 1000,
+    );
+
+    await Contest.findOneAndUpdate(
+      {
+        platform: "Codeforces",
+
+        externalId: String(contest.id),
+      },
+
+      {
+        platform: "Codeforces",
+
+        externalId: String(contest.id),
+
+        name: contest.name,
+
+        startTime,
+
+        endTime,
+
+        duration: contest.durationSeconds,
+
+        url: `https://codeforces.com/contest/${contest.id}`,
+
+        phase: contest.phase,
+
+        type: contest.type,
+
+        lastSyncedAt: new Date(),
+      },
+
+      {
+        upsert: true,
+
+        new: true,
+
+        setDefaultsOnInsert: true,
+      },
+    );
+
+    synced++;
+  }
+
+  return {
+    platform: "Codeforces",
+
+    total: contests.length,
+
+    synced,
+  };
 };
 
 export const syncLeetCodeContests = async () => {
-  try {
-    logger.info("Fetching LeetCode contests...");
+  const contests = await fetchLeetCodeContests();
 
-    const contests = await fetchLeetCodeContests();
+  let synced = 0;
 
-    const operations = contests.map((contest) => {
-      const normalised = normaliseLeetCodeContest(contest);
-
-      return {
-        updateOne: {
-          filter: {
-            platform: normalised.platform,
-            externalId: normalised.externalId,
-          },
-
-          update: {
-            $set: normalised,
-          },
-
-          upsert: true,
-        },
-      };
-    });
-
-    if (operations.length > 0) {
-      const result = await Contests.bulkWrite(operations);
-
-      logger.info(
-        `LeetCode synced: ${result.upsertedCount} inserted, ${result.modifiedCount} updated`,
-      );
+  for (const contest of contests) {
+    if (!contest.title || !contest.startTime || !contest.duration) {
+      continue;
     }
 
-    return {
-      success: true,
-      count: operations.length,
-    };
-  } catch (error) {
-    logger.error("LeetCode sync failed:", error.message);
+    const externalId = `${contest.title}-${contest.startTime}`;
 
-    return {
-      success: false,
-      count: 0,
-      error: error.message,
-    };
+    const startTime = new Date(contest.startTime * 1000);
+
+    const endTime = new Date((contest.startTime + contest.duration) * 1000);
+
+    await Contest.findOneAndUpdate(
+      {
+        platform: "LeetCode",
+
+        externalId,
+      },
+
+      {
+        platform: "LeetCode",
+
+        externalId,
+
+        name: contest.title,
+
+        startTime,
+
+        endTime,
+
+        duration: contest.duration,
+
+        url: `https://leetcode.com/contest/${contest.title
+          .toLowerCase()
+          .replace(/\s+/g, "-")}/`,
+
+        lastSyncedAt: new Date(),
+      },
+
+      {
+        upsert: true,
+
+        new: true,
+
+        setDefaultsOnInsert: true,
+      },
+    );
+
+    synced++;
   }
+
+  return {
+    platform: "LeetCode",
+
+    total: contests.length,
+
+    synced,
+  };
+};
+
+export const syncCodeChefContests = async () => {
+  const data = await fetchCodeChefContests();
+
+  const allContests = [
+    ...(data.future_contests || []),
+
+    ...(data.present_contests || []),
+
+    ...(data.past_contests || []),
+  ];
+
+  let synced = 0;
+
+  for (const contest of allContests) {
+    const externalId = String(
+      contest.contest_code || contest.contestCode || contest.code,
+    );
+
+    const name = contest.contest_name || contest.contestName || contest.name;
+
+    const start =
+      contest.contest_start_date_iso || contest.conteststartdate_iso;
+
+    const durationMinutes = Number(contest.contest_duration);
+
+    if (!externalId || !name || !start || !durationMinutes) {
+      continue;
+    }
+
+    const startTime = new Date(start);
+
+    const duration = durationMinutes * 60;
+
+    const endTime = new Date(startTime.getTime() + duration * 1000);
+
+    await Contest.findOneAndUpdate(
+      {
+        platform: "CodeChef",
+
+        externalId,
+      },
+
+      {
+        platform: "CodeChef",
+
+        externalId,
+
+        name,
+
+        startTime,
+
+        endTime,
+
+        duration,
+
+        url: `https://www.codechef.com/${externalId}`,
+
+        lastSyncedAt: new Date(),
+      },
+
+      {
+        upsert: true,
+
+        new: true,
+
+        setDefaultsOnInsert: true,
+      },
+    );
+
+    synced++;
+  }
+
+  return {
+    platform: "CodeChef",
+
+    total: allContests.length,
+
+    synced,
+  };
 };
 
 export const syncAllContests = async () => {
-  await connectDb();
+  const results = {};
 
-  await syncCodeForcesContests();
-  await syncCodeChefContests();
-  await syncLeetCodeContests();
+  try {
+    results.codeforces = await syncCodeforcesContests();
+  } catch (error) {
+    results.codeforces = {
+      error: error.message,
+    };
+  }
+
+  try {
+    results.leetcode = await syncLeetCodeContests();
+  } catch (error) {
+    results.leetcode = {
+      error: error.message,
+    };
+  }
+
+  try {
+    results.codechef = await syncCodeChefContests();
+  } catch (error) {
+    results.codechef = {
+      error: error.message,
+    };
+  }
+
+  return results;
 };
 
-syncAllContests()
-  .then(() => {
-    logger.info("Sync completed");
-  })
-  .catch((error) => {
-    logger.error("Sync failed:", error);
-    process.exit(1);
-  });
+const getAnalyticsStartDate = (period) => {
+  const now = new Date();
+
+  switch (period) {
+    case "week": {
+      const date = new Date(now);
+
+      date.setDate(date.getDate() - 7);
+
+      return date;
+    }
+
+    case "month": {
+      const date = new Date(now);
+
+      date.setMonth(date.getMonth() - 1);
+
+      return date;
+    }
+
+    case "3months": {
+      const date = new Date(now);
+
+      date.setMonth(date.getMonth() - 3);
+
+      return date;
+    }
+
+    case "6months": {
+      const date = new Date(now);
+
+      date.setMonth(date.getMonth() - 6);
+
+      return date;
+    }
+
+    case "year": {
+      const date = new Date(now);
+
+      date.setFullYear(date.getFullYear() - 1);
+
+      return date;
+    }
+
+    case "all":
+    default:
+      return null;
+  }
+};
+
+export const syncAllUserContests = async (userId) => {
+  const results = {};
+
+  try {
+    results.codeforces = await syncCodeforcesUserContests(userId);
+  } catch (error) {
+    results.codeforces = {
+      error: error.message,
+    };
+  }
+
+  try {
+    results.leetcode = await syncLeetCodeUserContests(userId);
+  } catch (error) {
+    results.leetcode = {
+      error: error.message,
+    };
+  }
+
+  try {
+    results.codechef = await syncCodeChefUserContests(userId);
+  } catch (error) {
+    results.codechef = {
+      error: error.message,
+    };
+  }
+
+  return results;
+};

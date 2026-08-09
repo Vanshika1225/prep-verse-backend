@@ -2,11 +2,13 @@ import axios from "axios";
 
 const CODECHEF_API = "https://www.codechef.com/api/list/contests/all";
 
-export const fetchCodeChefContest = async () => {
-  const response = await axios.get(CODECHEF_API);
+export const fetchCodeChefContests = async () => {
+  const response = await axios.get(CODECHEF_API, {
+    timeout: 15000,
+  });
 
   if (!response.data) {
-    throw new Error("CodeChef API Failed To Provide Data!");
+    throw new Error("CodeChef API failed to provide data");
   }
 
   return response.data;
@@ -40,4 +42,10 @@ export const normaliseCodeChefContest = (contest) => {
 
     lastSyncedAt: new Date(),
   };
+};
+
+export const fetchCodeChefUserContests = async (handle) => {
+  throw new Error(
+    "CodeChef user contest history provider is not configured yet",
+  );
 };

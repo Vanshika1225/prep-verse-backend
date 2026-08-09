@@ -1,9 +1,13 @@
 import logger from "../../../utils/logger.js";
+
 import {
   getCompletedContestsService,
   getLiveContests,
   getUpcommingContests,
+  getContestAnalytics,
 } from "./contests.service.js";
+
+import { syncAllContests } from "./contests.sync.js";
 
 export const getUpcomingContestsController = async (req, res) => {
   try {
@@ -15,7 +19,7 @@ export const getUpcomingContestsController = async (req, res) => {
       search,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: contests.length,
       contests,
@@ -23,7 +27,7 @@ export const getUpcomingContestsController = async (req, res) => {
   } catch (error) {
     logger.error("Get upcoming contests error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch upcoming contests",
     });
@@ -40,7 +44,7 @@ export const getLiveContestsController = async (req, res) => {
       search,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: contests.length,
       contests,
@@ -48,7 +52,7 @@ export const getLiveContestsController = async (req, res) => {
   } catch (error) {
     logger.error("Get live contests error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch live contests",
     });
@@ -68,6 +72,7 @@ export const getCompletedContestsController = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+
       message: "Completed contests fetched successfully",
 
       data: result,
@@ -78,6 +83,76 @@ export const getCompletedContestsController = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch completed contests",
+    });
+  }
+};
+
+export const getContestAnalyticsController = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const { period = "month", platform = "all" } = req.query;
+
+    const analytics = await getContestAnalytics({
+      userId,
+      period,
+      platform,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: analytics,
+    });
+  } catch (error) {
+    logger.error("Contest analytics error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch contest analytics",
+    });
+  }
+};
+
+export const syncUserContestsController = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const result = await syncAllUserContests(userId);
+
+    return res.status(200).json({
+      success: true,
+
+      message: "User contest history synced",
+
+      data: result,
+    });
+  } catch (error) {
+    logger.error("User contest sync error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to sync user contests",
+    });
+  }
+};
+
+export const syncContestsController = async (req, res) => {
+  try {
+    const result = await syncAllContests();
+
+    return res.status(200).json({
+      success: true,
+
+      message: "All platform contests synced",
+
+      data: result,
+    });
+  } catch (error) {
+    logger.error("Contest sync error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to sync contests",
     });
   }
 };

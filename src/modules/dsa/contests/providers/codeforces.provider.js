@@ -1,17 +1,20 @@
 import axios from "axios";
+import logger from "../../../../utils/logger.js";
 
-const CODEFORCES_API = "https://codeforces.com/api/contest.list";
+const CODEFORCES_API = "https://codeforces.com/api";
 
-export const fetchCodeforcesContest = async () => {
-  const resposne = await axios.get(CODEFORCES_API);
+export const fetchCodeforcesContests = async () => {
+  const response = await axios.get(`${CODEFORCES_API}/contest.list`, {
+    timeout: 15000,
+  });
 
-  if (resposne.data.status !== "OK") {
+  if (response.data.status !== "OK") {
     throw new Error(
-      resposne.data.comment || "Codeforces Api Failed To Provide Data!",
+      response.data.comment || "Codeforces API failed to provide data",
     );
   }
 
-  return resposne.data.result;
+  return response.data.result;
 };
 
 export const normaliseCodeforcesContest = (contest) => {
@@ -36,3 +39,25 @@ export const normaliseCodeforcesContest = (contest) => {
   };
 };
 
+export const fetchCodeforcesUserContests = async (handle) => {
+  try {
+    const response = await axios.get(`${CODEFORCES_API}/user.rating`, {
+      params: {
+        handle,
+      },
+      timeout: 10000,
+    });
+
+    if (response.data.status !== "OK") {
+      throw new Error(
+        response.data.comment || "Codeforces user rating API failed",
+      );
+    }
+
+    return response.data.result;
+  } catch (error) {
+    logger.error("Codeforces provider error:", error.message);
+
+    throw new Error("Failed to fetch Codeforces contest history");
+  }
+};
