@@ -6,14 +6,14 @@ import {
   getTopicBreakdownController,
   getRecentProblemsController,
 } from "./allProblems.controller.js";
-import { authenticateJWT } from "../../../middleware/auth.middleware.js";
+import { verifyAccessToken } from "../../../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/", authenticateJWT, getProblems);
-router.get("/overview-count", authenticateJWT, getOverview);
-router.get("/topic-wise-problem", authenticateJWT, getTopicBreakdownController);
-router.get("/recent-problems", authenticateJWT, getRecentProblemsController);
-router.post("/:problemId", authenticateJWT, updateUserProblem);
+router.get("/", verifyAccessToken, getProblems);
+router.get("/overview-count", verifyAccessToken, getOverview);
+router.get("/topic-wise-problem", verifyAccessToken, getTopicBreakdownController);
+router.get("/recent-problems", verifyAccessToken, getRecentProblemsController);
+router.post("/:problemId", verifyAccessToken, updateUserProblem);
 
 export default router;

@@ -1,7 +1,11 @@
 import { AUTH_MESSAGES } from "../../constants/messages.js";
 import { comparePassword, hashedPassword } from "../../utils/bcrypt.js";
 import { sendEmail } from "../../utils/email.js";
-import { generateAccessToken, generateRefreshToken } from "../../utils/jwt.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../../utils/jwt.js";
 import { generateResetToken, hashToken } from "../../utils/token.js";
 import { UserProfile } from "../users/users.model.js";
 import User from "./auth.model.js";
@@ -33,7 +37,15 @@ export const loginService = async (email, password, rememberMe) => {
   }
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user, rememberMe);
-  return { user, accessToken, refreshToken };
+
+  user.refreshToken = hashToken(refreshToken);
+  await user.save();
+
+  return {
+    user,
+    accessToken,
+    refreshToken,
+  };
 };
 
 export const forgetPasswordService = async (email) => {
@@ -296,14 +308,46 @@ export const googleLoginService = async (payload) => {
     user.avatar = picture;
   }
 
-  await user.save();
-
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user, false);
+  user.refreshToken = hashToken(refreshToken);
+  await user.save();
 
   return {
     user,
     accessToken,
     refreshToken,
   };
+};
+
+export const refreshAccessTokenService = async (incomingRefreshToken) => {
+  if (!incomingRefreshToken) {
+    throw new Error("Refresh token missing");
+  }
+
+  let decoded;
+  try {
+    decoded = verifyRefreshToken(incomingRefreshToken);
+  } catch {
+    console.log("REFRESH FAIL — JWT verify error:", e.message); // add this
+    throw new Error("Refresh token expired or invalid");
+  }
+
+  const user = await User.findById(decoded.userId);
+  if (!user || !user.refreshToken) {
+    throw new Error("Session expired, please login again");
+  }
+
+  if (hashToken(incomingRefreshToken) !== user.refreshToken) {
+    user.refreshToken = null;
+    await user.save();
+    throw new Error("Refresh token mismatch, please login again");
+  }
+
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user, true); // rotate
+  user.refreshToken = hashToken(refreshToken);
+  await user.save();
+
+  return { accessToken, refreshToken };
 };

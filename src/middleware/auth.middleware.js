@@ -1,23 +1,27 @@
 import jwt from "jsonwebtoken";
 import logger from "../utils/logger.js";
 
-export const authenticateJWT = (req, res, next) => {
+export const verifyAccessToken = (req, res, next) => {
   try {
     logger.info("JWT authentication started");
 
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
       logger.warn("Authorization token missing");
 
       return res.status(401).json({
-        message: "Access denied. No token provided.",
+        success: false,
+        message: "Access token missing",
       });
     }
 
     const token = authHeader.split(" ")[1];
 
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const decoded = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET
+    );
 
     logger.info("JWT verified", {
       userId: decoded.userId,
@@ -32,7 +36,8 @@ export const authenticateJWT = (req, res, next) => {
     });
 
     return res.status(401).json({
-      message: "Invalid or expired token.",
+      success: false,
+      message: "Access token expired or invalid",
     });
   }
 };
