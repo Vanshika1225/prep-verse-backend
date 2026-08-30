@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 
-import { AllProblems, UserProblem } from "./allProblems.model.js";
+import {
+  AllProblems,
+  PROBLEM_STATUSES,
+  UserProblem,
+} from "./allProblems.model.js";
 
 import { getDayKey } from "../../../utils/date.js";
 import { UserActivity } from "../../users/users.model.js";
@@ -35,6 +39,11 @@ export const getAllProblems = async (req) => {
   if (topic) {
     problemFilter.topics = topic;
   }
+
+  const [topics, difficulties] = await Promise.all([
+    AllProblems.distinct("topics"),
+    AllProblems.distinct("difficulty"),
+  ]);
 
   const totalProblems = await AllProblems.countDocuments(problemFilter);
 
@@ -73,6 +82,12 @@ export const getAllProblems = async (req) => {
 
   return {
     problems: result,
+
+    filters: {
+      topics: topics.filter(Boolean).sort(),
+      difficulties: difficulties.filter(Boolean).sort(),
+      statuses: PROBLEM_STATUSES,
+    },
     pagination: {
       totalProblems,
       currentPage: pageNumber,

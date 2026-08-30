@@ -5,16 +5,16 @@ import {
   getPatternDifficulty,
   getRecommendedProblems,
 } from "./patternWise.controller.js";
-import { authenticateJWT } from "../../../middleware/auth.middleware.js";
+import { verifyAccessToken } from "../../../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/", authenticateJWT, getAllPatterns);
-router.get("/:pattern/difficulty", authenticateJWT, getPatternDifficulty);
-router.get("/:pattern/learn", authenticateJWT, getLearningPoints);
+router.get("/", verifyAccessToken, getAllPatterns);
+router.get("/:pattern/difficulty", verifyAccessToken, getPatternDifficulty);
+router.get("/:pattern/learn", verifyAccessToken, getLearningPoints);
 router.get(
   "/:pattern/recommended-questions-for-you",
-  authenticateJWT,
+  verifyAccessToken,
   getRecommendedProblems,
 );
 export default router;

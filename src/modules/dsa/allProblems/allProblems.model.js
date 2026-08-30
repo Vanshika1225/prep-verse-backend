@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+export const PROBLEM_STATUSES = ["Not Started", "Attempted", "Solved", "Review"];
+
 const problemSchema = new mongoose.Schema(
   {
     title: {
@@ -39,7 +41,7 @@ const userProblemSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Not Started", "Attempted", "Solved", "Review"],
+      enum: PROBLEM_STATUSES,
       default: "Not Started",
     },
 

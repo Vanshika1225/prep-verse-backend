@@ -1,6 +1,6 @@
 import express from "express";
 
-import { authenticateJWT } from "../../../middleware/auth.middleware.js";
+import { verifyAccessToken } from "../../../middleware/auth.middleware.js";
 
 import {
   getCompletedContestsController,
@@ -13,11 +13,11 @@ import {
 
 const router = express.Router();
 
-router.get("/upcoming", authenticateJWT, getUpcomingContestsController);
-router.get("/live", authenticateJWT, getLiveContestsController);
-router.get("/completed", authenticateJWT, getCompletedContestsController);
-router.get("/analytics", authenticateJWT, getContestAnalyticsController);
-router.post("/sync/user", authenticateJWT, syncUserContestsController);
-router.post("/sync", authenticateJWT, syncContestsController);
+router.get("/upcoming", verifyAccessToken, getUpcomingContestsController);
+router.get("/live", verifyAccessToken, getLiveContestsController);
+router.get("/completed", verifyAccessToken, getCompletedContestsController);
+router.get("/analytics", verifyAccessToken, getContestAnalyticsController);
+router.post("/sync/user", verifyAccessToken, syncUserContestsController);
+router.post("/sync", verifyAccessToken, syncContestsController);
 
 export default router;

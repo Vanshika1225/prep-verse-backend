@@ -1,5 +1,5 @@
 import express from "express";
-import { authenticateJWT } from "../../../middleware/auth.middleware.js";
+import { verifyAccessToken } from "../../../middleware/auth.middleware.js";
 import {
   getAllRandomProblem,
   getRecentActivity,
@@ -7,7 +7,7 @@ import {
 
 const router = express.Router();
 
-router.get("/", authenticateJWT, getAllRandomProblem);
-router.get("/recent-activity", authenticateJWT, getRecentActivity);
+router.get("/", verifyAccessToken, getAllRandomProblem);
+router.get("/recent-activity", verifyAccessToken, getRecentActivity);
 
 export default router;

@@ -20,16 +20,15 @@ const userSchema = new mongoose.Schema(
         return this.provider === "local";
       },
     },
-    provider: {
-      type: String,
-      enum: ["local", "google"],
-      default: "local",
-    },
+    provider: { type: String, enum: ["local", "google"], default: "local" },
+    googleId: { type: String },
+    avatar: { type: String },
     role: {
-      type: "string",
+      type: String,
       enum: [ROLES.USER, ROLES.ADMIN],
       default: ROLES.USER,
     },
+    refreshToken: { type: String, default: null },
     resetPasswordToken: {
       type: "string",
     },
