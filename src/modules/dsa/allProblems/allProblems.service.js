@@ -20,8 +20,10 @@ export const getAllProblems = async (req) => {
     limit = 10,
   } = req.query;
 
-  const pageNumber = Number(page);
-  const limitNumber = Number(limit);
+  const pageNumber = Math.max(Number(page) || 1, 1);
+  const limitNumber = Math.max(Number(limit) || 10, 1);
+
+  const userId = new mongoose.Types.ObjectId(req.user.userId);
 
   const problemFilter = {};
 
@@ -45,40 +47,77 @@ export const getAllProblems = async (req) => {
     AllProblems.distinct("difficulty"),
   ]);
 
-  const totalProblems = await AllProblems.countDocuments(problemFilter);
-
-  const problems = await AllProblems.find(problemFilter)
-    .skip((pageNumber - 1) * limitNumber)
-    .limit(limitNumber);
-
-  const progress = await UserProblem.find({
-    userId: req.user.userId,
-    problemId: {
-      $in: problems.map((problem) => problem._id),
-    },
-  });
-
-  const progressMap = {};
-
-  progress.forEach((item) => {
-    progressMap[item.problemId.toString()] = item;
-  });
-
-  let result = problems.map((problem) => ({
-    ...problem.toObject(),
-    status: progressMap[problem._id]?.status || "Not Started",
-    bookmarked: progressMap[problem._id]?.bookmarked || false,
-  }));
+  const userProgressFilter = {
+    userId,
+  };
 
   if (status) {
-    result = result.filter((item) => item.status === status);
+    userProgressFilter.status = status;
   }
 
   if (bookmarked !== undefined) {
-    result = result.filter(
-      (item) => item.bookmarked === (bookmarked === "true"),
-    );
+    userProgressFilter.bookmarked = bookmarked === "true";
   }
+
+  let problemIds = null;
+
+  if (status || bookmarked !== undefined) {
+    const userProblems = await UserProblem.find(userProgressFilter)
+      .select("problemId")
+      .lean();
+
+    problemIds = userProblems.map((item) => item.problemId);
+
+    if (problemIds.length === 0) {
+      return {
+        problems: [],
+        filters: {
+          topics: topics.filter(Boolean).sort(),
+          difficulties: difficulties.filter(Boolean).sort(),
+          statuses: PROBLEM_STATUSES,
+        },
+        pagination: {
+          totalProblems: 0,
+          currentPage: pageNumber,
+          totalPages: 0,
+          limit: limitNumber,
+        },
+      };
+    }
+
+    problemFilter._id = {
+      $in: problemIds,
+    };
+  }
+  const totalProblems = await AllProblems.countDocuments(problemFilter);
+
+  const problems = await AllProblems.find(problemFilter)
+    .sort({ createdAt: -1 })
+    .skip((pageNumber - 1) * limitNumber)
+    .limit(limitNumber)
+    .lean();
+
+  const progress = await UserProblem.find({
+    userId,
+    problemId: {
+      $in: problems.map((problem) => problem._id),
+    },
+  }).lean();
+
+  const progressMap = {};
+
+  for (const item of progress) {
+    progressMap[item.problemId.toString()] = item;
+  }
+
+  const result = problems.map((problem) => {
+    const userProgress = progressMap[problem._id.toString()];
+    return {
+      ...problem,
+      status: userProgress?.status || "Not Started",
+      bookmarked: userProgress?.bookmarked || false,
+    };
+  });
 
   return {
     problems: result,
@@ -100,8 +139,8 @@ export const getAllProblems = async (req) => {
 export const updateUserProblem = async (req) => {
   const { status, bookmarked } = req.body;
 
-  const userId = req.user.userId;
-  const problemId = req.params.problemId;
+  const userId = new mongoose.Types.ObjectId(req.user.userId);
+  const problemId = new mongoose.Types.ObjectId(req.params.problemId);
 
   const existing = await UserProblem.findOne({
     userId,
@@ -156,7 +195,7 @@ export const updateUserProblem = async (req) => {
         },
 
         $addToSet: {
-          solvedProblemIds: new mongoose.Types.ObjectId(problemId),
+          solvedProblemIds: problemId,
         },
       },
       {
@@ -213,21 +252,23 @@ export const getRecentProblems = async (userId) => {
     .limit(5)
     .populate("problemId", "title difficulty slug");
 
-  return recentProblems.map((item) => ({
-    id: item.problemId._id,
-    title: item.problemId.title,
-    slug: item.problemId.slug,
-    difficulty: item.problemId.difficulty,
-    status: item.status,
-    bookmarked: item.bookmarked,
-    updatedAt: item.updatedAt,
-  }));
+  return recentProblems
+    .filter((item) => item.problemId)
+    .map((item) => ({
+      id: item.problemId._id,
+      title: item.problemId.title,
+      slug: item.problemId.slug,
+      difficulty: item.problemId.difficulty,
+      status: item.status,
+      bookmarked: item.bookmarked,
+      updatedAt: item.updatedAt,
+    }));
 };
 
 export const getTopicBreakdown = async (userId) => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
 
-  return await UserProblem.aggregate([
+  const result = await UserProblem.aggregate([
     {
       $match: {
         userId: userObjectId,
@@ -266,7 +307,10 @@ export const getTopicBreakdown = async (userId) => {
     {
       $sort: {
         solved: -1,
+        topic: 1,
       },
     },
   ]);
+
+  return result;
 };
