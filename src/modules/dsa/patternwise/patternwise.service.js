@@ -54,7 +54,7 @@ export const getAllPatternsService = async (userId) => {
       progress:
         pattern.totalProblems === 0
           ? 0
-          : Math.round((solvedCount / pattern.totalProblems) * 100),
+          : Number(((solvedCount / pattern.totalProblems) * 100).toFixed(2)),
     };
   });
 
@@ -65,7 +65,7 @@ export const getAllPatternsService = async (userId) => {
       progress:
         totalProblems === 0
           ? 0
-          : Math.round((solvedProblemIds.size / totalProblems) * 100),
+          : Number(((solvedProblemIds.size / totalProblems) * 100).toFixed(2)),
     },
     patterns,
   };
@@ -123,7 +123,9 @@ export const getPatternDifficultyService = async (userId, pattern) => {
     const item = result[level];
 
     item.progress =
-      item.total === 0 ? 0 : Math.round((item.solved / item.total) * 100);
+      item.total === 0
+        ? 0
+        : Number(((item.solved / item.total) * 100).toFixed(2));
   });
 
   return result;
