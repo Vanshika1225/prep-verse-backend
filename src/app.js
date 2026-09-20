@@ -38,9 +38,10 @@ app.use(errorHandler);
 app.use("/api/auth", authRoutes);
 
 // dsa
-app.use("/api/problems", problemRoutes);
-app.use("/api/problems/patternwise", patternRoutes);
 app.use("/api/problems/randomProblem", randomProblemRoutes);
+app.use("/api/problems/patternwise", patternRoutes);
+app.use("/api/problems", problemRoutes);
+
 app.use("/api/contests", contestsRoutes);
 
 // users
