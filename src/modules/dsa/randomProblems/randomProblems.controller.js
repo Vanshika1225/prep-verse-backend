@@ -8,8 +8,23 @@ export const getAllRandomProblem = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const { difficulty, topics, count, excludeSolved, bookmarkedOnly } =
-      req.body;
+    const difficulty = Array.isArray(req.query.difficulty)
+      ? req.query.difficulty
+      : req.query.difficulty
+        ? [req.query.difficulty]
+        : [];
+
+    const topics = Array.isArray(req.query.topics)
+      ? req.query.topics
+      : req.query.topics
+        ? [req.query.topics]
+        : [];
+
+    const count = Number(req.query.count) || 10;
+
+    const excludeSolved = req.query.excludeSolved === "true";
+
+    const bookmarkedOnly = req.query.bookmarkedOnly === "true";
 
     const problems = await allRandomProblemService({
       userId,
@@ -36,7 +51,7 @@ export const getAllRandomProblem = async (req, res) => {
 export const getRecentActivity = async (req, res) => {
   try {
     const userId = req.user.userId;
-    
+
     const recentActivity = await getRecentActivityService({ userId });
 
     res.status(httpStatusCodes.OK).json({
