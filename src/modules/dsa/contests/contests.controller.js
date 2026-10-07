@@ -1,3 +1,4 @@
+import { AUTH_MESSAGES } from "../../../constants/messages.js";
 import { httpStatusCodes } from "../../../constants/statusCode.js";
 import logger from "../../../utils/logger.js";
 
@@ -8,7 +9,7 @@ import {
   getContestAnalytics,
 } from "./contests.service.js";
 
-import { syncAllContests } from "./contests.sync.js";
+import { syncAllContests, syncAllUserContests } from "./contests.sync.js";
 
 export const getUpcomingContestsController = async (req, res) => {
   try {
@@ -30,7 +31,7 @@ export const getUpcomingContestsController = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to fetch upcoming contests",
+      message: AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -55,7 +56,7 @@ export const getLiveContestsController = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to fetch live contests",
+      message: AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -83,7 +84,7 @@ export const getCompletedContestsController = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to fetch completed contests",
+      message: AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -109,7 +110,7 @@ export const getContestAnalyticsController = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message || "Failed to fetch contest analytics",
+      message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -132,7 +133,7 @@ export const syncUserContestsController = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message || "Failed to sync user contests",
+      message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -153,7 +154,7 @@ export const syncContestsController = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message || "Failed to sync contests",
+      message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };

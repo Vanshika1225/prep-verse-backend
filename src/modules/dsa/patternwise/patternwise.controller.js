@@ -1,6 +1,12 @@
+import { AUTH_MESSAGES } from "../../../constants/messages.js";
 import { httpStatusCodes } from "../../../constants/statusCode.js";
 import logger from "../../../utils/logger.js";
-import { getAllPatternsService, getLearningPointsService, getPatternDifficultyService, getRecommendedProblemsService } from "./patternWise.service.js";
+import {
+  getAllPatternsService,
+  getLearningPointsService,
+  getPatternDifficultyService,
+  getRecommendedProblemsService,
+} from "./patternWise.service.js";
 
 export const getAllPatterns = async (req, res) => {
   try {
@@ -15,7 +21,7 @@ export const getAllPatterns = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message,
+      message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -26,7 +32,7 @@ export const getPatternDifficulty = async (req, res) => {
 
     const data = await getPatternDifficultyService(
       req.user.userId,
-      decodeURIComponent(pattern)
+      decodeURIComponent(pattern),
     );
 
     return res.status(httpStatusCodes.OK).json({
@@ -38,11 +44,10 @@ export const getPatternDifficulty = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message,
+      message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
-
 
 export const getLearningPoints = async (req, res) => {
   try {
@@ -57,7 +62,7 @@ export const getLearningPoints = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message,
+      message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -68,7 +73,7 @@ export const getRecommendedProblems = async (req, res) => {
 
     const data = await getRecommendedProblemsService(
       req.user.userId,
-      decodeURIComponent(pattern)
+      decodeURIComponent(pattern),
     );
 
     return res.status(httpStatusCodes.OK).json({
@@ -80,7 +85,7 @@ export const getRecommendedProblems = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message,
+      message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
