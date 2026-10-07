@@ -2,7 +2,7 @@ import { fetchCodeforcesContests } from "./providers/codeforces.provider.js";
 
 import { fetchCodeChefContests } from "./providers/codechef.provider.js";
 
-import { fetchLeetCodeContests } from "./providers/leetcode.provider.js";
+import { fetchLeetCodeContests, fetchLeetCodeUserContests } from "./providers/leetcode.provider.js";
 
 import Contest from "./contests.model.js";
 

@@ -6,7 +6,8 @@ export const AUTH_MESSAGES = {
   LOGIN_SUCCESS: "Login Successfully.",
   INVALID_TOKEN: "Invalid or Expired token.",
   USER_NOT_FOUND: "User not found.",
-  RESENT_LINK_SENT:"Reset link sent successfully.",
+  RESENT_LINK_SENT: "Reset link sent successfully.",
   PASSWORD_RESET_SUCCESSFULLY: "Password Reset successfully.",
-  LOGOUT_SUCCESS:"Logout successfully."
+  LOGOUT_SUCCESS: "Logout successfully.",
+  INTERNAL_SERVER_ERROR_MESSAGE: "Internal Server Error",
 };

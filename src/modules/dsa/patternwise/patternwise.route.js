@@ -4,7 +4,7 @@ import {
   getLearningPoints,
   getPatternDifficulty,
   getRecommendedProblems,
-} from "./patternWise.controller.js";
+} from "./patternwise.controller.js";
 import { verifyAccessToken } from "../../../middleware/auth.middleware.js";
 
 const router = express.Router();

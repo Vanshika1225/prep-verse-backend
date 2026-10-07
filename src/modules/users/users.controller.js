@@ -1,3 +1,4 @@
+import { AUTH_MESSAGES } from "../../constants/messages.js";
 import { httpStatusCodes } from "../../constants/statusCode.js";
 import logger from "../../utils/logger.js";
 import User from "../auth/auth.model.js";
@@ -23,7 +24,7 @@ export const getProfile = async (req, res) => {
       .status(error.statusCode || httpStatusCodes.INTERNAL_SERVER_ERROR)
       .json({
         success: false,
-        message: error.message || "Failed to fetch profile",
+        message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
       });
   }
 };
@@ -44,7 +45,7 @@ export const updateProfile = async (req, res) => {
       .status(error.statusCode || httpStatusCodes.INTERNAL_SERVER_ERROR)
       .json({
         success: false,
-        message: error.message || "Failed to update profile",
+        message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
       });
   }
 };
@@ -62,7 +63,7 @@ export const getStreak = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to fetch streak",
+      message: AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };

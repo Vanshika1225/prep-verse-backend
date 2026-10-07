@@ -43,7 +43,7 @@ export const getAllRandomProblem = async (req, res) => {
   } catch (error) {
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message,
+      message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -62,7 +62,7 @@ export const getRecentActivity = async (req, res) => {
   } catch (error) {
     res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message,
+      message: error.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };

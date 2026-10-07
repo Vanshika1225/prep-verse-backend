@@ -1,3 +1,4 @@
+import { AUTH_MESSAGES } from "../../../constants/messages.js";
 import { httpStatusCodes } from "../../../constants/statusCode.js";
 import logger from "../../../utils/logger.js";
 import * as problemService from "./allProblems.service.js";
@@ -15,7 +16,7 @@ export const getProblems = async (req, res) => {
     logger.error("get Problem Error:", err);
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: err.message,
+      message: err.message || AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -47,7 +48,7 @@ export const getOverview = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Internal Server Error",
+      message: AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -67,7 +68,7 @@ export const getRecentProblemsController = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Internal Server Error",
+      message: AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
@@ -87,7 +88,7 @@ export const getTopicBreakdownController = async (req, res) => {
 
     return res.status(httpStatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Internal Server Error",
+      message: AUTH_MESSAGES.INTERNAL_SERVER_ERROR_MESSAGE,
     });
   }
 };
