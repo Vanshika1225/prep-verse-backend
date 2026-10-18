@@ -4,6 +4,7 @@ const DAY_MAP = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
 function generateTasksForPlan(plan) {
   const tasks = [];
+
   const {
     specializations,
     availableDays,
@@ -13,44 +14,123 @@ function generateTasksForPlan(plan) {
     endDate,
   } = plan;
 
-  if (!specializations.length || !availableDays.length) return tasks;
+  if (!specializations?.length || !availableDays?.length) {
+    return tasks;
+  }
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const allowedDays = availableDays.map((d) => DAY_MAP[d]);
+  const DAY_MAP = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+
+  const allowedDays = availableDays.map((day) => DAY_MAP[day]);
 
   const [fromH, fromM] = availableFrom.split(":").map(Number);
   const [untilH, untilM] = availableUntil.split(":").map(Number);
-  const totalMinutes = untilH * 60 + untilM - (fromH * 60 + fromM);
-  const slotDuration = Math.max(
-    30,
-    Math.floor(totalMinutes / specializations.length),
+
+  const startMinutes = fromH * 60 + fromM;
+  const endMinutes = untilH * 60 + untilM;
+  const totalMinutes = endMinutes - startMinutes;
+
+  if (totalMinutes <= 0) return tasks;
+
+  const BREAK_DURATION = 45;
+  const BREAK_COUNT = 2;
+  const MIN_SESSION_DURATION = 30;
+
+  const formatTime = (minutes) =>
+    `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(
+      minutes % 60,
+    ).padStart(2, "0")}`;
+
+  const minutesPerSubject = totalMinutes / specializations.length;
+
+  const addBreaks = minutesPerSubject >= 120;
+
+  const studyMinutes = addBreaks
+    ? totalMinutes - BREAK_DURATION * BREAK_COUNT
+    : totalMinutes;
+
+  if (studyMinutes < MIN_SESSION_DURATION) return tasks;
+
+  const subjectsToday = Math.min(
+    specializations.length,
+    Math.floor(studyMinutes / MIN_SESSION_DURATION),
   );
 
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    if (!allowedDays.includes(d.getDay())) continue;
+  if (subjectsToday === 0) return tasks;
 
-    let currentMinutes = fromH * 60 + fromM;
+  const baseSessionDuration = Math.floor(studyMinutes / subjectsToday);
 
-    for (const topic of specializations) {
-      if (currentMinutes + slotDuration > untilH * 60 + untilM) break;
+  const extraMinutes = studyMinutes % subjectsToday;
 
-      const startTimeStr = `${String(Math.floor(currentMinutes / 60)).padStart(2, "0")}:${String(currentMinutes % 60).padStart(2, "0")}`;
-      const endMinutes = currentMinutes + slotDuration;
-      const endTimeStr = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`;
+  const breakAfter = new Set();
+
+  if (addBreaks) {
+    if (subjectsToday === 1) {
+      breakAfter.add(1);
+    } else if (subjectsToday === 2) {
+      breakAfter.add(1);
+      breakAfter.add(2);
+    } else {
+      const firstBreak = Math.max(1, Math.round(subjectsToday / 3));
+
+      const secondBreak = Math.min(
+        subjectsToday,
+        Math.max(firstBreak + 1, Math.round((subjectsToday * 2) / 3)),
+      );
+
+      breakAfter.add(firstBreak);
+      breakAfter.add(secondBreak);
+    }
+  }
+
+  let topicIndex = 0;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  for (
+    let date = new Date(start);
+    date <= end;
+    date.setDate(date.getDate() + 1)
+  ) {
+    if (!allowedDays.includes(date.getDay())) continue;
+
+    let currentMinutes = startMinutes;
+
+    for (let i = 0; i < subjectsToday; i++) {
+      const topic = specializations[topicIndex];
+
+      const sessionDuration = baseSessionDuration + (i < extraMinutes ? 1 : 0);
+
+      const sessionEnd = currentMinutes + sessionDuration;
+
+      if (sessionEnd > endMinutes) break;
 
       tasks.push({
         planId: plan._id,
         userId: plan.userId,
         title: topic,
-        scheduledDate: new Date(d),
-        startTime: startTimeStr,
-        endTime: endTimeStr,
         topic,
+        scheduledDate: new Date(date),
+        startTime: formatTime(currentMinutes),
+        endTime: formatTime(sessionEnd),
         status: "Pending",
       });
 
-      currentMinutes = endMinutes;
+      currentMinutes = sessionEnd;
+
+      topicIndex = (topicIndex + 1) % specializations.length;
+
+      if (breakAfter.has(i + 1)) {
+        currentMinutes += BREAK_DURATION;
+      }
     }
   }
 
@@ -265,24 +345,34 @@ export const getTodayFocus = async (userId) => {
   return tasks;
 };
 
-export const updateTaskStatus = async (taskId, userId, updateData) => {
-  const update = { status: updateData.status };
+export const updateTasksStatus = async (ids, userId, updateData) => {
+  const { status } = updateData;
 
-  if (updateData.status === "Completed") {
-    update.completedAt = new Date();
-  } else {
-    update.completedAt = null;
-  }
-
-  const task = await StudyTask.findOneAndUpdate(
-    { _id: taskId, userId },
-    { $set: update },
-    { new: true, runValidators: true },
+  const tasks = await StudyTask.updateMany(
+    {
+      _id: { $in: ids },
+      userId,
+    },
+    {
+      $set: {
+        status,
+        completedAt:
+          status === "Completed" ? new Date() : null,
+      },
+    },
   );
 
-  if (!task) {
-    throw new Error("Task not found");
-  }
+  const updatedTasks = await StudyTask.find({
+    _id: { $in: ids },
+    userId,
+  })
+    .populate("planId", "name")
+    .sort({ startTime: 1 })
+    .lean();
 
-  return task;
+  return {
+    matchedCount: tasks.matchedCount,
+    modifiedCount: tasks.modifiedCount,
+    tasks: updatedTasks,
+  };
 };

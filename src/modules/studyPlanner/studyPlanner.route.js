@@ -4,8 +4,8 @@ import {
   getPlans,
   getStats,
   getWeeklySchedule,
-  updateTaskStatus,
   getTodayFocus,
+  updateTasksStatus,
 } from "./studyPlanner.controller.js";
 import { verifyAccessToken } from "../../middleware/auth.middleware.js";
 
@@ -16,6 +16,5 @@ router.get("/", verifyAccessToken, getPlans);
 router.get("/schedule", verifyAccessToken, getWeeklySchedule);
 router.get("/stats", verifyAccessToken, getStats);
 router.get("/today-focus", verifyAccessToken, getTodayFocus);
-router.post("/tasks/:taskId", verifyAccessToken, updateTaskStatus);
-
+router.patch("/tasks/bulk-status", verifyAccessToken, updateTasksStatus);
 export default router;

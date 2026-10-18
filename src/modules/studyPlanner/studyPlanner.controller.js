@@ -90,21 +90,35 @@ export const getTodayFocus = async (req, res) => {
   }
 };
 
-export const updateTaskStatus = async (req, res, next) => {
+export const updateTasksStatus = async (req, res, next) => {
   try {
-    const task = await studyPlannerService.updateTaskStatus(
-      req.params.taskId,
+    const { ids, status } = req.body;
+
+    if (
+      !Array.isArray(ids) ||
+      ids.length === 0 ||
+      !ids.every((id) => typeof id === "string") ||
+      !["Pending", "Completed"].includes(status)
+    ) {
+      return res.status(httpStatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Valid task IDs and status are required.",
+      });
+    }
+
+    const data = await studyPlannerService.updateTasksStatus(
+      ids,
       req.user.userId,
-      req.body,
+      { status },
     );
 
     return res.status(httpStatusCodes.OK).json({
       success: true,
-      message: "Task updated successfully.",
-      data: task,
+      message: "Tasks updated successfully.",
+      data,
     });
-  } catch (err) {
-    logger.error("Update Task Error:", err);
-    next(err);
+  } catch (error) {
+    logger.error("Update Tasks Status Error:", error);
+    next(error);
   }
 };
