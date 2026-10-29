@@ -6,7 +6,7 @@ import {
   getLearningPointsService,
   getPatternDifficultyService,
   getRecommendedProblemsService,
-} from "./patternWise.service.js";
+} from "./patternwise.service.js";
 
 export const getAllPatterns = async (req, res) => {
   try {
