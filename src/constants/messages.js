@@ -10,4 +10,6 @@ export const AUTH_MESSAGES = {
   PASSWORD_RESET_SUCCESSFULLY: "Password Reset successfully.",
   LOGOUT_SUCCESS: "Logout successfully.",
   INTERNAL_SERVER_ERROR_MESSAGE: "Internal Server Error",
+  REQUIRED_VALID_ROADMAP_ID: "Valid roadmap ID is required.",
+  ROADMAP_NOT_FOUND: "Roadmap not found.",
 };
