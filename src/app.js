@@ -13,13 +13,19 @@ import errorHandler from "./middleware/error.middleware.js";
 import morgan from "morgan";
 import logger from "./utils/logger.js";
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://prep-verse-frontend-git-dev-vanshikas-projects-21dfd3b4.vercel.app",
+  "https://prep-verse-frontend-4okl69xuo-vanshikas-projects-21dfd3b4.vercel.app",
+];
+
 const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
