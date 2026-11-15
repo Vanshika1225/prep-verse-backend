@@ -1,4 +1,5 @@
 import { Job, JobApplication } from "./jobOpenings.model.js";
+import { JobTracker, JobActivity, deriveCategory } from "../jobTracker/jobTracker.model.js";
 
 const SORT_OPTIONS = {
   recent: { postedAt: -1 },
@@ -8,7 +9,7 @@ const SORT_OPTIONS = {
 };
 
 const NEW_JOB_WINDOW_MS = 24 * 60 * 60 * 1000;
-const PENDING_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000; 
+const PENDING_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000;
 
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -393,6 +394,43 @@ export const confirmApply = async (jobId, userId, applied) => {
   await application.save();
 
   await Job.updateOne({ _id: jobId }, { $inc: { applicationsCount: 1 } });
+
+  const job = await Job.findById(jobId).lean();
+  if (job) {
+    const existingTracker = await JobTracker.findOne({ userId, jobId });
+    if (!existingTracker) {
+      const newTracker = await JobTracker.create({
+        userId,
+        jobId: job._id,
+        company: job.company,
+        companyLogo: job.companyLogo || "",
+        role: job.title,
+        category: deriveCategory(job.title, job.skills || []),
+        location: job.city || job.location || "India",
+        workMode: job.workMode || "On-site",
+        status: "Applied",
+        tag: "New",
+        appliedDate: application.appliedAt,
+        salary: {
+          min: job.salaryMin ?? null,
+          max: job.salaryMax ?? null,
+          currency: job.currency || "INR",
+        },
+        jobUrl: job.applyUrl || "",
+        notes: application.notes || "",
+      });
+
+      await JobActivity.create({
+        userId,
+        applicationId: newTracker._id,
+        company: job.company,
+        companyLogo: job.companyLogo || "",
+        role: job.title,
+        title: `Applied to ${job.company}`,
+        type: "Applied",
+      });
+    }
+  }
 
   return {
     applicationId: application._id,
