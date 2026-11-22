@@ -2,8 +2,10 @@ import { getDayKey } from "../../utils/date.js";
 import User from "../auth/auth.model.js";
 import { UserActivity, UserProfile } from "./users.model.js";
 import {
+  ACTIVITY_FIELDS,
   calculateConsecutiveDays,
   calculateLongestStreak,
+  ONE_DAY_MS,
   TIME_ZONE,
 } from "./users.utils.js";
 
@@ -20,8 +22,8 @@ export const getProfileService = async (userId) => {
 
   return {
     ...profile.toObject(),
-    email: user.email,
-    provider: user.provider,
+    email: user?.email,
+    provider: user?.provider,
   };
 };
 
@@ -66,18 +68,72 @@ export const updateProfileService = async (userId, data) => {
   return profile;
 };
 
+export const recordActivityService = async (userId, field, itemIds) => {
+  if (!ACTIVITY_FIELDS.includes(field)) {
+    throw new Error(`Invalid activity field: ${field}`);
+  }
+
+  const ids = Array.isArray(itemIds) ? itemIds : [itemIds];
+  if (ids.length === 0) return null;
+
+  const now = new Date();
+  const dayKey = getDayKey(now, TIME_ZONE);
+
+  const run = () =>
+    UserActivity.findOneAndUpdate(
+      { userId, dayKey },
+      {
+        $setOnInsert: { activityAt: now },
+        $addToSet: { [field]: { $each: ids } },
+      },
+      { upsert: true, new: true },
+    );
+
+  try {
+    return await run();
+  } catch (error) {
+    // do requests ek saath upsert karein to duplicate key aa sakti hai, ek baar retry
+    if (error.code === 11000) return run();
+    throw error;
+  }
+};
+
+export const removeActivityService = async (userId, field, itemIds, date) => {
+  if (!ACTIVITY_FIELDS.includes(field)) {
+    throw new Error(`Invalid activity field: ${field}`);
+  }
+
+  const ids = Array.isArray(itemIds) ? itemIds : [itemIds];
+  const dayKey = getDayKey(date ? new Date(date) : new Date(), TIME_ZONE);
+
+  const doc = await UserActivity.findOneAndUpdate(
+    { userId, dayKey },
+    { $pull: { [field]: { $in: ids } } },
+    { new: true },
+  );
+
+  if (!doc) return null;
+
+  const isEmpty = ACTIVITY_FIELDS.every((f) => !doc[f] || doc[f].length === 0);
+
+  if (isEmpty) {
+    await UserActivity.deleteOne({ _id: doc._id });
+  }
+
+  return doc;
+};
+
 export const getStreakService = async (userId) => {
-  const activities = await UserActivity.find({
+  const activityQuery = {
     userId,
-    solvedProblemIds: {
-      $exists: true,
-      $ne: [],
-    },
-  })
-    .sort({
-      dayKey: -1,
-    })
-    .select("dayKey solvedProblemIds")
+    $or: ACTIVITY_FIELDS.map((field) => ({
+      [`${field}.0`]: { $exists: true },
+    })),
+  };
+
+  const activities = await UserActivity.find(activityQuery)
+    .sort({ dayKey: -1 })
+    .select(`dayKey ${ACTIVITY_FIELDS.join(" ")}`)
     .lean();
 
   if (activities.length === 0) {
@@ -87,33 +143,31 @@ export const getStreakService = async (userId) => {
       activeToday: false,
       lastActiveDate: null,
       todaySolved: 0,
+      todayJobsApplied: 0,
+      todayPlannerDone: 0,
     };
   }
 
   const now = new Date();
-
   const todayKey = getDayKey(now, TIME_ZONE);
 
-  const activitySet = new Set(activities.map((activity) => activity.dayKey));
+  const activitySet = new Set(activities.map((a) => a.dayKey));
 
-  const todayActivity = activities.find(
-    (activity) => activity.dayKey === todayKey,
-  );
+  const todayActivity = activities.find((a) => a.dayKey === todayKey);
 
   const todaySolved = todayActivity?.solvedProblemIds?.length || 0;
+  const todayJobsApplied = todayActivity?.jobApplicationIds?.length || 0;
+  const todayPlannerDone = todayActivity?.completedPlannerTaskIds?.length || 0;
 
   const activeToday = activitySet.has(todayKey);
 
-  let currentStreak = 0;
-
+  // Agar aaj activity nahi hui to kal se count shuru karo (streak abhi tootti nahi)
   const startDate = new Date(now);
-
   if (!activeToday) {
-    startDate.setDate(startDate.getDate() - 1);
+    startDate.setTime(startDate.getTime() - ONE_DAY_MS);
   }
 
-  currentStreak = calculateConsecutiveDays(activitySet, startDate);
-
+  const currentStreak = calculateConsecutiveDays(activitySet, startDate);
   const longestStreak = calculateLongestStreak(activitySet);
 
   return {
@@ -122,5 +176,7 @@ export const getStreakService = async (userId) => {
     activeToday,
     lastActiveDate: activities[0]?.dayKey || null,
     todaySolved,
+    todayJobsApplied,
+    todayPlannerDone,
   };
 };

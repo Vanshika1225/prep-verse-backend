@@ -292,6 +292,9 @@ export const updateMilestoneStatus = async (
 
   if (index === -1) return null;
 
+  let newlyCompletedId = null;
+  const resetMilestones = [];
+
   if (status === "Completed") {
     const previousDone = roadmap.milestones
       .slice(0, index)
@@ -308,11 +311,18 @@ export const updateMilestoneStatus = async (
     if (roadmap.milestones[index].status !== "Completed") {
       roadmap.milestones[index].status = "Completed";
       roadmap.milestones[index].completedAt = new Date();
+      newlyCompletedId = roadmap.milestones[index]._id;
     }
   } else {
     for (let i = index; i < roadmap.milestones.length; i++) {
-      roadmap.milestones[i].status = "Pending";
-      roadmap.milestones[i].completedAt = null;
+      const m = roadmap.milestones[i];
+
+      if (m.status === "Completed") {
+        resetMilestones.push({ id: m._id, completedAt: m.completedAt });
+      }
+
+      m.status = "Pending";
+      m.completedAt = null;
     }
   }
 
@@ -329,6 +339,23 @@ export const updateMilestoneStatus = async (
   }
 
   await roadmap.save();
+
+  if (newlyCompletedId) {
+    await recordActivityService(
+      userId,
+      "completedMilestoneIds",
+      newlyCompletedId,
+    );
+  }
+
+  for (const m of resetMilestones) {
+    await removeActivityService(
+      userId,
+      "completedMilestoneIds",
+      m.id,
+      m.completedAt,
+    );
+  }
 
   return formatRoadmap(roadmap.toObject());
 };

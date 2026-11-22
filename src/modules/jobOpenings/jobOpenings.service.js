@@ -1,5 +1,10 @@
 import { Job, JobApplication } from "./jobOpenings.model.js";
-import { JobTracker, JobActivity, deriveCategory } from "../jobTracker/jobTracker.model.js";
+import {
+  JobTracker,
+  JobActivity,
+  deriveCategory,
+} from "../jobTracker/jobTracker.model.js";
+import { recordActivityService } from "../users/users.service.js";
 
 const SORT_OPTIONS = {
   recent: { postedAt: -1 },
@@ -324,7 +329,6 @@ export const getFilterOptions = async () => {
   };
 };
 
-
 // Step 1: user clicked "Apply Now" -> record intent, return the external URL
 export const startApply = async (jobId, userId) => {
   const job = await Job.findOne({ _id: jobId, isActive: true })
@@ -392,6 +396,8 @@ export const confirmApply = async (jobId, userId, applied) => {
   application.status = "Applied";
   application.appliedAt = new Date();
   await application.save();
+
+  await recordActivityService(userId, "jobApplicationIds", application._id);
 
   await Job.updateOne({ _id: jobId }, { $inc: { applicationsCount: 1 } });
 
