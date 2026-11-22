@@ -1,7 +1,23 @@
 import mongoose from "mongoose";
 
-export const PLAN_DURATIONS = ["3 Months", "6 Months", "9 Months"];
-export const ORGANIZATION_TYPES = ["Daily", "Weekly", "Monthly"];
+export const PLAN_DURATIONS = [
+  "1 Month",
+  "2 Months",
+  "3 Months",
+  "4 Months",
+  "5 Months",
+  "6 Months",
+  "9 Months",
+  "12 Months",
+];
+export const ORGANIZATION_TYPES = [
+  "Daily",
+  "Weekly",
+  "Monthly",
+  "Product",
+  "Service",
+  "Custom",
+];
 export const TASK_STATUSES = ["Pending", "In Progress", "Completed", "Skipped"];
 export const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
