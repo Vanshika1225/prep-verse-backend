@@ -2,6 +2,15 @@ import { getDayKey } from "../../utils/date.js";
 
 export const TIME_ZONE = "Asia/Kolkata";
 
+export const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+export const ACTIVITY_FIELDS = [
+  "solvedProblemIds",
+  "jobApplicationIds",
+  "completedPlannerTaskIds",
+  "completedMilestoneIds",
+];
+
 const parseDayKey = (dayKey) => {
   const [year, month, day] = dayKey.split("-").map(Number);
 
@@ -21,8 +30,7 @@ export const calculateConsecutiveDays = (activitySet, startDate) => {
     }
 
     streak++;
-
-    currentDate.setDate(currentDate.getDate() - 1);
+    currentDate.setTime(currentDate.getTime() - ONE_DAY_MS);
   }
 
   return streak;
@@ -43,9 +51,7 @@ export const calculateLongestStreak = (activitySet) => {
 
     const currentDate = parseDayKey(days[i]);
 
-    const difference = Math.round(
-      (currentDate - previousDate) / (1000 * 60 * 60 * 24),
-    );
+    const difference = Math.round((currentDate - previousDate) / ONE_DAY_MS);
 
     if (difference === 1) {
       current++;
