@@ -27,37 +27,49 @@ export const getProfileService = async (userId) => {
   };
 };
 
-export const updateProfileService = async (userId, data) => {
-  const {
-    name,
-    phone,
-    avatar,
-    bio,
-    country,
-    city,
-    leetcodeHandle,
-    codeforcesHandle,
-    codechefHandle,
-  } = data;
+const MAX_AVATAR_LENGTH = 200_000;
 
-  const profile = await UserProfile.findOneAndUpdate(
-    { userId },
-    {
-      name,
-      phone,
-      avatar,
-      bio,
-      country,
-      city,
-      leetcodeHandle,
-      codeforcesHandle,
-      codechefHandle,
-    },
-    {
-      new: true,
-      runValidators: true,
-    },
-  );
+export const updateProfileService = async (userId, data) => {
+  const allowedFields = [
+    "name",
+    "phone",
+    "avatar",
+    "bio",
+    "country",
+    "city",
+    "leetcodeHandle",
+    "codeforcesHandle",
+    "codechefHandle",
+  ];
+
+  const updates = {};
+  allowedFields.forEach((field) => {
+    if (data[field] !== undefined) updates[field] = data[field];
+  });
+
+  // avatar: null removes the photo, otherwise it must be a small image data URL
+  if (updates.avatar !== undefined && updates.avatar !== null) {
+    const isImage =
+      typeof updates.avatar === "string" &&
+      updates.avatar.startsWith("data:image/");
+
+    if (!isImage) {
+      const error = new Error("Invalid profile picture");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (updates.avatar.length > MAX_AVATAR_LENGTH) {
+      const error = new Error("Profile picture is too large");
+      error.statusCode = 413;
+      throw error;
+    }
+  }
+
+  const profile = await UserProfile.findOneAndUpdate({ userId }, updates, {
+    new: true,
+    runValidators: true,
+  });
 
   if (!profile) {
     const error = new Error("Profile not found");
