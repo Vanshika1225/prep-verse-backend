@@ -1,3 +1,4 @@
+import { recordActivityService, removeActivityService } from "../users/users.service.js";
 import { StudyPlan, StudyTask } from "./studyPlanner.model.js";
 
 const DAY_MAP = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
@@ -348,6 +349,14 @@ export const getTodayFocus = async (userId) => {
 export const updateTasksStatus = async (ids, userId, updateData) => {
   const { status } = updateData;
 
+  // update se pehle purani state chahiye (kaun already completed tha, kab complete hua tha)
+  const previousTasks = await StudyTask.find({
+    _id: { $in: ids },
+    userId,
+  })
+    .select("_id status completedAt")
+    .lean();
+
   const tasks = await StudyTask.updateMany(
     {
       _id: { $in: ids },
@@ -356,11 +365,33 @@ export const updateTasksStatus = async (ids, userId, updateData) => {
     {
       $set: {
         status,
-        completedAt:
-          status === "Completed" ? new Date() : null,
+        completedAt: status === "Completed" ? new Date() : null,
       },
     },
   );
+
+  if (status === "Completed") {
+    const newlyCompletedIds = previousTasks
+      .filter((t) => t.status !== "Completed")
+      .map((t) => t._id);
+
+    await recordActivityService(
+      userId,
+      "completedPlannerTaskIds",
+      newlyCompletedIds,
+    );
+  } else {
+    for (const task of previousTasks) {
+      if (task.status === "Completed") {
+        await removeActivityService(
+          userId,
+          "completedPlannerTaskIds",
+          task._id,
+          task.completedAt,
+        );
+      }
+    }
+  }
 
   const updatedTasks = await StudyTask.find({
     _id: { $in: ids },

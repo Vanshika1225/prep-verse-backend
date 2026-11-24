@@ -88,11 +88,18 @@ const userActivitySchema = new mongoose.Schema(
     },
 
     solvedProblemIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Problem",
-      },
+      { type: mongoose.Schema.Types.ObjectId, ref: "Problem" },
     ],
+
+    jobApplicationIds: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "JobApplication" },
+    ],
+
+    completedPlannerTaskIds: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "StudyTask" },
+    ],
+
+    completedMilestoneIds: [{ type: mongoose.Schema.Types.ObjectId }],
   },
   {
     timestamps: true,

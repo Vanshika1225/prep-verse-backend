@@ -11,6 +11,7 @@ import contestsRoutes from "./modules/dsa/contests/contests.route.js";
 import userRoutes from "./modules/users/users.route.js";
 import jobRoutes from "./modules/jobOpenings/jobOpenings.route.js";
 import jobTrackerRoutes from "./modules/jobTracker/jobTracker.route.js";
+import dashboardRoutes from "./modules/dashboard/dashboard.route.js";
 import errorHandler from "./middleware/error.middleware.js";
 import morgan from "morgan";
 import logger from "./utils/logger.js";
@@ -25,7 +26,7 @@ const allowedOrigins = [
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(
   cors({
@@ -69,5 +70,8 @@ app.use("/api/job-openings", jobRoutes);
 
 // Job Tracker
 app.use("/api/job-tracker", jobTrackerRoutes);
+
+// Dashboard
+app.use("/api/dashboard", dashboardRoutes);
 
 export default app;
